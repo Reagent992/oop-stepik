@@ -1,11 +1,35 @@
-from typing import Dict, Type, Union
+from typing import Callable, Dict, Type, Union
 
 Digit = Union[int, float]
 
 
+def digits_validator(value: Digit) -> bool:
+    if not isinstance(value, (int, float)) or value <= 0:
+        raise TypeError
+    return True
+
+
+def str_validator(value: str) -> bool:
+    if not isinstance(value, str):
+        raise TypeError
+    return True
+
+
+def dict_validator(value: dict) -> bool:
+    if not isinstance(value, dict):
+        raise TypeError
+    return True
+
+
+def int_validator(value: int) -> bool:
+    if not isinstance(value, int):
+        raise TypeError
+    return True
+
+
 class Descriptor:
-    def __init__(self, required_type) -> None:
-        self.required_type = required_type
+    def __init__(self, validator: Callable) -> None:
+        self.validator = validator
 
     def __set_name__(self, owner: Type[object], name: str):
         self.private_name = f"_{owner.__name__}__{name}"
@@ -14,28 +38,15 @@ class Descriptor:
         return getattr(obj, self.private_name, None)
 
     def __set__(self, obj: object, value) -> None:
-        if self.validate(value):
+        if self.validator(value):
             setattr(obj, self.private_name, value)
-
-    def validate(self, value) -> bool:
-        if not isinstance(value, self.required_type):
-            raise TypeError
-        if type(self.required_type) == tuple:
-            if (
-                any(i in (int, float) for i in self.required_type)
-                and not value > 0
-            ):
-                raise TypeError
-        if self.required_type in (int, float) and not value > 0:
-            raise TypeError
-        return True
 
 
 class Aircraft:
-    _model = Descriptor(str)
-    _mass = Descriptor((int, float))
-    _top = Descriptor((int, float))
-    _speed = Descriptor((int, float))
+    _model = Descriptor(str_validator)
+    _mass = Descriptor(digits_validator)
+    _top = Descriptor(digits_validator)
+    _speed = Descriptor(digits_validator)
 
     def __init__(
         self, model: str, mass: Digit, speed: Digit, top: Digit
@@ -47,17 +58,17 @@ class Aircraft:
 
 
 class PassengerAircraft(Aircraft):
-    _chairs = Descriptor(int)
+    _chairs = Descriptor(int_validator)
 
     def __init__(
-        self, model: str, mass: Digit, speed: Digit, top: Digit, chairs: int 
+        self, model: str, mass: Digit, speed: Digit, top: Digit, chairs: int
     ) -> None:
         super().__init__(model, mass, speed, top)
         self._chairs = chairs
 
 
 class WarPlane(Aircraft):
-    _weapons = Descriptor(dict)
+    _weapons = Descriptor(dict_validator)
 
     def __init__(
         self,
